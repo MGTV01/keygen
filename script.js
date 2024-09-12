@@ -1,9 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
-    const MAX_KEYS_PER_GAME_PER_DAY = 100;
-    //const EVENTS_DELAY = 50000;
+    const EVENTS_DELAY = 20000;
+    const MAX_KEYS_PER_GAME_PER_DAY = Infinity;  // Removed the daily limit
 
-      const games = {
+    const games = {
         1: {
             name: 'Zoopolls',
             appToken: 'b2436c89-e0aa-4aed-8046-9b0515e1c46b',
@@ -81,9 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
             timing: 20000,
             attempts: 30,
         }
-    };
-    
-    
+    };  
+
     const startBtn = document.getElementById('startBtn');
     const keyCountSelect = document.getElementById('keyCountSelect');
     const keyCountLabel = document.getElementById('keyCountLabel');
@@ -95,11 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const keysList = document.getElementById('keysList');
     const copyAllBtn = document.getElementById('copyAllBtn');
     const generatedKeysTitle = document.getElementById('generatedKeysTitle');
-    const gameSelect = document.getElementById('gameSelect');
-    const copyStatus = document.getElementById('copyStatus');
-    const previousKeysContainer = document.getElementById('previousKeysContainer');
-    const previousKeysList = document.getElementById('previousKeysList');
-    const telegramChannelBtn = document.getElementById('telegramChannelBtn');
+   
 
     const initializeLocalStorage = () => {
         const now = new Date().toISOString().split('T')[0];
@@ -107,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const storageKey = `keys_generated_${game.name}`;
             const storedData = JSON.parse(localStorage.getItem(storageKey));
             if (!storedData || storedData.date !== now) {
-                localStorage.setItem(storageKey, JSON.stringify({ date: now, count: 0, keys: [] }));
+                localStorage.setItem(storageKey, JSON.stringify({ date: now, count: 0 }));
             }
         });
     };
@@ -202,22 +196,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const storageKey = `keys_generated_${game.name}`;
         const storedData = JSON.parse(localStorage.getItem(storageKey));
 
-        if (storedData.count + keyCount > MAX_KEYS_PER_GAME_PER_DAY) {
-            alert(`You can generate only ${MAX_KEYS_PER_GAME_PER_DAY - storedData.count} more keys for ${game.name} today.`);
-            previousKeysList.innerHTML = storedData.keys.map(key =>
-                `<div class="key-item">
-                    <input type="text" value="${key}" readonly>
-                </div>`
-            ).join('');
-            previousKeysContainer.classList.remove('hidden');
-            return;
-        }
+        
 
         keyCountLabel.innerText = `Number of keys: ${keyCount}`;
 
         progressBar.style.width = '0%';
         progressText.innerText = '0%';
-        progressLog.innerText = 'Starting... \n Please wait It may take upto 1 min to Login';
+        progressLog.innerText = 'Starting...';
         progressContainer.classList.remove('hidden');
         keyContainer.classList.add('hidden');
         generatedKeysTitle.classList.add('hidden');
@@ -247,10 +232,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return null;
             }
 
-            for (let i = 0; i < game.attemptsNumber ; i++) {
-                await sleep(game.eventsDelay * delayRandom());
+            for (let i = 0; i < 25; i++) {
+                await sleep(EVENTS_DELAY * delayRandom());
                 const hasCode = await emulateProgress(clientToken, game.promoId);
-                updateProgress(((100 / game.attemptsNumber) / keyCount), 'Emulating progress...');
+                updateProgress(7 / keyCount, 'Emulating progress...');
                 if (hasCode) {
                     break;
                 }
@@ -284,8 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
         }
 
-        storedData.count += keys.filter(key => key).length;
-        storedData.keys.push(...keys.filter(key => key));
+        storedData.count += keyCount;
         localStorage.setItem(storageKey, JSON.stringify(storedData));
 
         keyContainer.classList.remove('hidden');
@@ -294,69 +278,84 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', (event) => {
                 const key = event.target.getAttribute('data-key');
                 navigator.clipboard.writeText(key).then(() => {
-                    copyStatus.innerText = `Copied ${key}`;
-                    setTimeout(() => {
-                        copyStatus.innerText = '';
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Could not copy text: ', err);
+                    copyStatus.classList.remove('hidden');
+                    setTimeout(() => copyStatus.classList.add('hidden'), 2000);
                 });
             });
         });
+        copyAllBtn.addEventListener('click', () => {
+            const keysText = keys.filter(key => key).join('\n');
+            navigator.clipboard.writeText(keysText).then(() => {
+                copyStatus.classList.remove('hidden');
+                setTimeout(() => copyStatus.classList.add('hidden'), 2000);
+            });
+        });
 
-        startBtn.disabled = false;
+        progressBar.style.width = '100%';
+        progressText.innerText = '100%';
+        progressLog.innerText = 'Complete';
+
+        startBtn.classList.remove('hidden');
         keyCountSelect.classList.remove('hidden');
         gameSelect.classList.remove('hidden');
-        startBtn.classList.remove('hidden');
+        startBtn.disabled = false;
     });
 
-    copyAllBtn.addEventListener('click', () => {
-        const allKeys = Array.from(document.querySelectorAll('.key-item input')).map(input => input.value).join('\n');
-        navigator.clipboard.writeText(allKeys).then(() => {
-            copyStatus.innerText = 'All keys copied';
-            setTimeout(() => {
-                copyStatus.innerText = '';
-            }, 2000);
-        }).catch(err => {
-            console.error('Could not copy text: ', err);
-        });
+    document.getElementById('generateMoreBtn').addEventListener('click', () => {
+        progressContainer.classList.add('hidden');
+        keyContainer.classList.add('hidden');
+        startBtn.classList.remove('hidden');
+        keyCountSelect.classList.remove('hidden');
+        gameSelect.classList.remove('hidden');
+        generatedKeysTitle.classList.add('hidden');
+        copyAllBtn.classList.add('hidden');
+        keysList.innerHTML = '';
+        keyCountLabel.innerText = 'Number of keys:';
     });
 
     document.getElementById('creatorChannelBtn').addEventListener('click', () => {
-        window.open('https://telegram.me/Sam_Dm_bot', '_blank');
+        window.open('https://t.me/kelliarkcrypto', '_blank');
     });
 
     telegramChannelBtn.addEventListener('click', () => {
-        window.open('https://telegram.me/Insta_Buy_Follower', '_blank');
+        window.open('https://t.me/HkGenKey_bot', '_blank');
     });
+});
 
-    document.getElementById('ShowKeysBtn').addEventListener('click', () => {
-        const generatedCodesContainer = document.getElementById('generatedCodesContainer');
-        const generatedCodesList = document.getElementById('generatedCodesList');
-        generatedCodesList.innerHTML = ''; // Clear the list
+document.addEventListener('DOMContentLoaded', () => {
+    const games = {
+        1: { name: 'Zoopolls' },
+        2: { name: 'Chain Cube 2048' },
+        3: { name: 'Train Miner' },
+        4: { name: 'Merge Away' },
+        5: { name: 'Twerk Race 3D' },
+        6: { name: 'Polysphere' },
+        7: { name: 'Tile Trio' },
+        8: { name: 'Mow and Trim' },
+        9: { name: 'Fluff Crusade' },
+        10: {name: 'Stone Age' },
+        11: {name: 'Bouncemasters' },
+    };
 
-        let codesGeneratedToday = [];
+    const gameSelect = document.getElementById('gameSelect');
+    const generatedKeysTitle = document.getElementById('generatedKeysTitle');
 
-        Object.keys(games).forEach(key => {
-            const game = games[key];
-            const storageKey = `keys_generated_${game.name}`;
-            const storedData = JSON.parse(localStorage.getItem(storageKey));
-
-            if (storedData && storedData.keys && storedData.keys.length > 0) {
-                codesGeneratedToday = codesGeneratedToday.concat(storedData.keys.map(code => {
-                    return `<li>${game.name}: ${code}</li>`;
-                }));
-            }
-        });
-
-        if (codesGeneratedToday.length > 0) {
-            generatedCodesList.innerHTML = codesGeneratedToday.join('');
+    // Update selected game dynamically when game is chosen from dropdown
+    gameSelect.addEventListener('change', function () {
+        const selectedGame = games[gameSelect.value];
+        if (selectedGame) {
+            generatedKeysTitle.textContent = `Selected Game: ${selectedGame.name}`;
         } else {
-            generatedCodesList.innerHTML = '<li>No codes generated today.</li>';
+            generatedKeysTitle.textContent = 'Please select a game!';
         }
-
-        generatedCodesContainer.style.display = 'block';
     });
+});
 
-    
+window.addEventListener('scroll', function() {
+    const sidebar = document.getElementById('sidebar'); // Make sure the sidebar has this ID
+    if (window.scrollY > 0) {
+        sidebar.style.display = 'none';  // Hide sidebar when scrolling
+    } else {
+        sidebar.style.display = 'block';  // Show sidebar when at the top
+    }
 });
