@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             promoId: '4bdc17da-2601-449b-948e-f8c7bd376553',
             timing: 20000,
             attempts: 30,
+        }
     };  
 
     const startBtn = document.getElementById('startBtn');
